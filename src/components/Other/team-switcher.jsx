@@ -43,7 +43,7 @@ export function TeamSwitcher() {
             render={
               <SidebarMenuButton
                 size="lg"
-                className="data-popup-open:bg-sidebar-border gap-3 h-13 bg-popover data-popup-open:text-sidebar-accent-foreground"
+                className="data-popup-open:bg-sidebar-border rounded-lg gap-3 h-13 bg-popover data-popup-open:text-sidebar-accent-foreground"
               />
             }
           >
