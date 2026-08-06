@@ -9,7 +9,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import MainPage from "./pages";
 function App() {
   return (
-    <div>
+    <div className="bg-card text-card-foreground">
       <Routes>
         <Route path="/" element={<MainPage />} />
         {/* <Route path="/sign-up" element={<SignupPage />} />
