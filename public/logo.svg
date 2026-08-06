@@ -1,0 +1,64 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 512 512"
+  role="img"
+  aria-labelledby="chatty-logo-title"
+>
+  <title id="chatty-logo-title">Chatty</title>
+  <defs>
+    <mask
+      id="chatty-cutouts"
+      x="0"
+      y="0"
+      width="512"
+      height="512"
+      maskUnits="userSpaceOnUse"
+      style="mask-type: luminance"
+    >
+      <rect width="512" height="512" fill="#000" />
+
+      <path
+        fill="#fff"
+        d="M132 86h163c26 0 47 21 47 47v61c0 21-13 39-33 45l-44 14c-7 2-14 0-19-5l-9-9c-6-6-15-8-23-5l-54 19v59h-28c-26 0-47-21-47-47V133c0-26 21-47 47-47Z"
+      />
+      <path
+        fill="#fff"
+        d="M217 199h28v-1l54-18c8-3 17-1 23 5l9 9c5 5 12 7 19 5l44-14c20-6 33 9 33 30v164c0 26-21 47-47 47H217c-26 0-47-21-47-47V246c0-26 21-47 47-47Z"
+      />
+
+      <path
+        d="M160 312v-58c0-42 32-77 82-94"
+        fill="none"
+        stroke="#000"
+        stroke-linecap="round"
+        stroke-width="28"
+      />
+      <circle cx="270" cy="151" r="28" fill="#000" />
+
+      <path
+        d="M260 260c61-5 105-27 109-65"
+        fill="none"
+        stroke="#000"
+        stroke-linecap="round"
+        stroke-width="28"
+      />
+      <circle cx="240" cy="262" r="29" fill="#000" />
+
+      <path
+        d="M260 347c65-12 109-48 109-102"
+        fill="none"
+        stroke="#000"
+        stroke-linecap="round"
+        stroke-width="28"
+      />
+      <circle cx="239" cy="351" r="28" fill="#000" />
+    </mask>
+  </defs>
+
+  <rect
+    width="512"
+    height="512"
+    fill="#fff"
+    mask="url(#chatty-cutouts)"
+  />
+</svg>
