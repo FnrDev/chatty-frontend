@@ -7,10 +7,13 @@ import {
 import { TeamSwitcher } from "../Other/team-switcher"
 import CreateChannel from "../Channel/CreateChannel"
 import { useAuth } from "@/context/AuthContext"
+import { useState } from "react"
 
 export function AppSidebar(props) {
 
   const { user } = useAuth()
+  const [channels, setChannels] = useState([])
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   return (
     <Sidebar {...props} >
@@ -22,7 +25,20 @@ export function AppSidebar(props) {
       <TeamSwitcher />
       </SidebarHeader>
       <SidebarContent className="px-2.5 mt-1">
-        <CreateChannel />
+        <CreateChannel 
+           open={dialogOpen}
+           onOpenChange={setDialogOpen}
+           onCreated={(workspace) => setChannels([...channels, workspace])}
+        />
+        <div className="flex flex-col gap-3 mt-5">
+          {channels.map((e) => {
+          return(
+            <div className="flex p-1.5 px-3 flex-col gap-1 bg-sidebar-accent rounded-lg">
+              <p className="text-[14px]"># {e.name}</p>
+            </div>
+          )
+        })}
+        </div>
       </SidebarContent>
       <SidebarFooter>
         <div className="bg-popover rounded-md flex items-center gap-3 p-3">
