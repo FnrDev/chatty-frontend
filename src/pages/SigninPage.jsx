@@ -1,81 +1,71 @@
-// src/components/SignInForm/SignInForm.jsx
+import { useNavigate } from "react-router";
+import { signIn } from "../services/authService";
+import { Button } from "@/components/ui/button"
+import {
+  Field,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+import { useForm } from "react-hook-form"
 
-import { useState, useContext } from 'react';
-import { useNavigate } from 'react-router';
+function SignInForm() {
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+    setError
+  } = useForm()
 
-import { signIn } from '../services/authService';
-import { useAuth } from '../context/AuthContext';
-
-
-const SignInForm = ({}) => {
-  const {setUser} = useAuth()
   const navigate = useNavigate();
-  const [error, setError] = useState('');
-  const [formData, setFormData] = useState({
-    username: '',
-    password: '',
-  });
 
-  function handleChange(event){
-    setFormData({ ...formData, [event.target.name]: event.target.value });
-
-
-  }
-
-  async function handleSubmit(event){
-    event.preventDefault();
-
-  }
-  async function handleSubmit(event){
-    event.preventDefault();
+  async function onSubmit(data) {
     try {
-      const signedInUser = await signIn(formData);
-
-      setUser(signedInUser);
-      navigate('/dashboard');
+      await signIn(data);
+      navigate('/')
     } catch (err) {
-      console.log(`Error: ${err}`)
-      setError(err?.response?.data?.message);
+      setError("server", {
+        type: "server",
+        message: err.response?.data?.message || "Something went wrong",
+      });
     }
-  };
+  }
 
   return (
-    <main>
-      <h1>Sign In</h1>
-      <p className='error'>{error}</p>
-      <form autoComplete='off' onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor='email'>Username:</label>
-          <input
-            type='text'
-            autoComplete='off'
-            id='username'
-            value={formData.username}
-            name='username'
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor='password'>Password:</label>
-          <input
-            type='password'
-            autoComplete='off'
-            id='password'
-            value={formData.password}
-            name='password'
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div>
-          <button>Sign In</button>
-          <button onClick={() => navigate('/')}>Cancel</button>
-        </div>
+   <main className="flex h-[100vh] items-start">
+    <div className="p-8 flex-1 flex-col flex">
+      <div className="w-[80%] mt-5 mx-auto">
+       <h1 className="text-2xl font-medium">Sign In</h1>
+      <p className="mt-2 font-light text-white/70">Sign in with your existing account</p>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <FieldGroup className="mt-10">
+      <Field>
+        <FieldLabel htmlFor="username">Username</FieldLabel>
+        <Input {...register("username", {required: true})} placeholder="Jordan Lee" />
+        {errors.username && <span className="text-red-500 text-sm">This field is required</span>}
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="password">Password</FieldLabel>
+        <Input
+          {...register("password", {required: true})}
+          type="password"
+          placeholder="Your Password"
+        />
+                {errors.password && <span className="text-red-500 text-sm">This field is required</span>}
+      </Field>
+      <Field orientation="horizontal">
+        <Button type="submit" className="w-full">Submit</Button>
+      </Field>
+      {errors.server && <span className="text-red-500 text-sm">{errors.server.message}</span>}
+      </FieldGroup>
       </form>
-    </main>
+      </div>
+    </div>
+    <div className="flex-1 flex-col items-center justify-center p-8 bg-sidebar-accent bg-cover bg-center h-full w-full flex">
+      <img src="/logo.svg" width={700} height={700} />
+    </div>
+   </main>
   );
-};
-
+}
 export default SignInForm;
-

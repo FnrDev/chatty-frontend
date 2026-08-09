@@ -25,7 +25,7 @@ function Signup() {
       await signUp(data);
       navigate('/sign-in')
     } catch (err) {
-      setError("root.server", {
+      setError("server", {
         type: "server",
         message: err.response?.data?.message || "Something went wrong",
       });
@@ -55,7 +55,7 @@ function Signup() {
                 {errors.password && <span className="text-red-500 text-sm">This field is required</span>}
       </Field>
       <Field>
-        <FieldLabel htmlFor="repeatPassword">Password</FieldLabel>
+        <FieldLabel htmlFor="repeatPassword">Repeat Password</FieldLabel>
         <Input
           {...register("repeatPassword", { required: true })}
           type="password"
@@ -66,7 +66,7 @@ function Signup() {
       <Field orientation="horizontal">
         <Button type="submit" className="w-full">Submit</Button>
       </Field>
-      {errors.root?.server && <span className="text-red-500 text-sm">{errors.root.server.message}</span>}
+      {errors.server && <span className="text-red-500 text-sm">{errors.server.message}</span>}
       </FieldGroup>
       </form>
       </div>
