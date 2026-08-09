@@ -11,28 +11,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
-  Dialog,
-  DialogContent,
-  DialogClose,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-import {
-  Field,
-  FieldGroup,
-  FieldLabel,
-  FieldSet,
-} from "@/components/ui/field"
-import { Input } from "../ui/input"
-import { Button } from "../ui/button"
+import CreateWorkspace from "@/components/Workspace/CreateWorkspace"
 import api from "@/services/api"
-import { useForm } from "react-hook-form"
 import { useNavigate } from "react-router"
 
 export function TeamSwitcher() {
@@ -72,28 +57,6 @@ export function TeamSwitcher() {
     }
     loadData()
   }, [])
-
-  const {
-      register,
-      handleSubmit,
-      formState: { errors },
-      setError
-  } = useForm()
-
-  async function onSubmit(data) {
-    try {
-      const created = await api.post("/workspaces", data)
-      console.log(created.data)
-      setWorkSpaces([...workSpaces, created.data])
-      setDialogOpen(!dialogOpen)
-    } catch (err) {
-      console.log(err)
-      setError("server", {
-        type: "server",
-        message: err.response?.data?.message || "Something went wrong",
-      });
-    }
-  }
 
   if (!activeTeam) {
     return null
@@ -160,32 +123,11 @@ export function TeamSwitcher() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent showCloseButton={false}>
-            <DialogHeader>
-              <DialogTitle>Create New WorkSpace</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit(onSubmit)}>
-              <FieldSet>
-                <FieldGroup>
-                  <Field>
-                    <FieldLabel htmlFor="name">Name <span className="text-destructive">*</span></FieldLabel>
-                    <Input id="name" {...register("name", {required: true, min: 3, max: 100})} autoComplete="off" placeholder="Set workspace name" />
-                    {errors.name && (<span className="text-red-500 text-sm">{errors.name}</span>)}
-                  </Field>
-                </FieldGroup>
-                <Field orientation="vertical">
-                  <Button type="submit">Create</Button>
-                  <DialogClose
-                    render={<Button variant="outline" className="w-full" type="button" />}
-                  >
-                    Cancel
-                  </DialogClose>
-                </Field>
-              </FieldSet>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <CreateWorkspace
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          onCreated={(workspace) => setWorkSpaces([...workSpaces, workspace])}
+        />
       </SidebarMenuItem>
     </SidebarMenu>
   )
