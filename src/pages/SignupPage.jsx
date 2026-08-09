@@ -1,86 +1,76 @@
-import { useState } from "react";
 import { useNavigate } from "react-router";
 import { signUp } from "../services/authService";
+import { Button } from "@/components/ui/button"
+import {
+  Field,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+import { useForm } from "react-hook-form"
 
 function Signup() {
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+  } = useForm()
+
   const navigate = useNavigate();
-  const [error, setError] = useState("");
-  const [formData, setFormData] = useState({
-    username: "",
-    password: "",
-    passwordConf: "",
-  });
-  const [ submitting, setSubmitting ] = useState(false)
 
-  const { username, password, passwordConf } = formData;
-
-  function handleChange(event){
-    setError("");
-    setFormData({ ...formData, [event.target.name]: event.target.value });
-
-  }
-
-
-  async function handleSubmit(event){
-    event.preventDefault();
+  async function onSubmit(data) {
     try {
-      setSubmitting(true)
-      await signUp(formData);
+      await signUp(data);
       navigate('/sign-in')
     } catch (err) {
-      setError(err.response.data.message);
-      setSubmitting(false)
+      errors.catch = err
     }
   }
 
-  function isFormInvalid(){
-    return !(username && password && password === passwordConf);
-  };
-
   return (
-    <main>
-      <h1>Sign Up</h1>
-      <p className="error">{error}</p>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="username">Username:</label>
-          <input
-            type="text"
-            id="username"
-            value={username}
-            name="username"
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="password">Password:</label>
-          <input
-            type="password"
-            id="password"
-            value={password}
-            name="password"
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="confirm">Confirm Password:</label>
-          <input
-            type="password"
-            id="confirm"
-            value={passwordConf}
-            name="passwordConf"
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div>
-          <button disabled={isFormInvalid() || submitting}>{submitting ? 'Signing up...' : 'Sign Up'}</button>
-          <button onClick={() => navigate("/")}>Cancel</button>
-        </div>
+   <main className="flex h-[100vh] items-start">
+    <div className="p-8 flex-1 flex-col flex">
+      <div className="w-[80%] mt-5 mx-auto">
+       <h1 className="text-2xl font-medium">Sign Up</h1>
+      <p className="mt-2 font-light text-white/70">Create new account from this form</p>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <FieldGroup className="mt-10">
+      <Field>
+        <FieldLabel htmlFor="username">Username</FieldLabel>
+        <Input {...register("username", {required: true})} placeholder="Jordan Lee" />
+        {errors.username && <span className="text-red-500 text-sm">This field is required</span>}
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="password">Password</FieldLabel>
+        <Input
+          {...register("password", {required: true})}
+          type="password"
+          placeholder="Your Password"
+        />
+                {errors.password && <span className="text-red-500 text-sm">This field is required</span>}
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="repeatPassword">Password</FieldLabel>
+        <Input
+          {...register("repeatPassword", { required: true })}
+          type="password"
+          placeholder="Your Repeated Password"
+        />
+      {errors.repeatPassword && <span className="text-red-500 text-sm">This field is required</span>}
+      </Field>
+      <Field orientation="horizontal">
+        <Button type="submit" className="w-full">Submit</Button>
+      </Field>
+      {errors.catch && <span className="text-red-500 text-sm">{errors.catch}</span>}
+      </FieldGroup>
       </form>
-    </main>
+      </div>
+    </div>
+    <div className="flex-1 flex-col items-center justify-center p-8 bg-sidebar-accent bg-cover bg-center h-full w-full flex">
+      <img src="/logo.svg" width={700} height={700} />
+    </div>
+   </main>
   );
 }
 export default Signup;

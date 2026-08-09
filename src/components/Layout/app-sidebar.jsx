@@ -20,7 +20,12 @@ export function AppSidebar(props) {
       <SidebarContent className="px-2.5 mt-1">
         <CreateChannel />
       </SidebarContent>
-      <SidebarFooter />
+      <SidebarFooter>
+        <div className="bg-popover rounded-md flex items-center gap-3 p-3">
+          <img width={40} className="rounded-md" height={40} src="https://i.pinimg.com/1200x/dc/fb/17/dcfb17e9334c906c8a62273ae0a34900.jpg" />
+          <p>Ali Matar</p>
+        </div>
+      </SidebarFooter> 
     </Sidebar>
   )
 }
