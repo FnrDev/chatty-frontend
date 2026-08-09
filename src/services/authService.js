@@ -2,7 +2,8 @@
 import api from './api'
 
 async function signUp(formData){
-    const response = await api.post('/auth/sign-up',formData)
+    const response = await api.post('/auth/sign-up', formData)
+    return response.data
 }
 
 async function signIn(formData){

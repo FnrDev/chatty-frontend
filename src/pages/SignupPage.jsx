@@ -15,6 +15,7 @@ function Signup() {
     handleSubmit,
     watch,
     formState: { errors },
+    setError
   } = useForm()
 
   const navigate = useNavigate();
@@ -24,7 +25,10 @@ function Signup() {
       await signUp(data);
       navigate('/sign-in')
     } catch (err) {
-      errors.catch = err
+      setError("root.server", {
+        type: "server",
+        message: err.response?.data?.message || "Something went wrong",
+      });
     }
   }
 
@@ -62,7 +66,7 @@ function Signup() {
       <Field orientation="horizontal">
         <Button type="submit" className="w-full">Submit</Button>
       </Field>
-      {errors.catch && <span className="text-red-500 text-sm">{errors.catch}</span>}
+      {errors.root?.server && <span className="text-red-500 text-sm">{errors.root.server.message}</span>}
       </FieldGroup>
       </form>
       </div>
