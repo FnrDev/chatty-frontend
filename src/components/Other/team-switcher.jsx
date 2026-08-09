@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/sidebar"
 import CreateWorkspace from "@/components/Workspace/CreateWorkspace"
 import api from "@/services/api"
-import { useNavigate } from "react-router"
+import { useNavigate, useParams } from "react-router"
 
 export function TeamSwitcher() {
   const { isMobile } = useSidebar()
@@ -28,6 +28,7 @@ export function TeamSwitcher() {
   const [dialogOpen, setDialogOpen] = useState(false)
 
   const navigate = useNavigate();
+  const { id: routeId } = useParams()
 
 
   async function selectWorkspace(id) {
@@ -35,7 +36,7 @@ export function TeamSwitcher() {
       const detailsResponse = await api.get(`/workspaces/${id}`)
       setWorkSpaceDetails(detailsResponse.data)
       setActiveTeam(detailsResponse.data)
-      navigate(`/${id}`)
+      navigate(`/workspace/${id}`)
     } catch (err) {
       console.log(err)
     }
@@ -48,15 +49,16 @@ export function TeamSwitcher() {
         const workspacesData = response.data
         setWorkSpaces(workspacesData)
 
-        if (workspacesData && workspacesData.length > 0) {
-          await selectWorkspace(workspacesData[0]._id)
+        const targetId = routeId ?? workspacesData?.[0]?._id
+        if (targetId) {
+          await selectWorkspace(targetId)
         }
       } catch (err) {
         console.log(err)
       }
     }
     loadData()
-  }, [])
+  }, [routeId])
 
   if (!activeTeam) {
     return null

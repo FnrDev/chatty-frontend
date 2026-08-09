@@ -26,7 +26,7 @@ function SignInForm() {
     try {
       const user = await signIn(data);
       setUser(user);
-      navigate('/workspace')
+      navigate('/workspaces')
     } catch (err) {
       setError("server", {
         type: "server",

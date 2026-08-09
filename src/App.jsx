@@ -6,17 +6,16 @@ import SignInPage from "./pages/SigninPage";
 // import { getCurrentUser, logout } from "./services/authService";
 import ProtectedRoute from "./components/ProtectedRoute";
 // import { useAuth } from "./context/AuthContext";
-import MainPage from "./pages/Workspaces";
 import Workspaces from "./pages/Workspaces";
+import WorkSpaceApp from "./pages/app";
 function App() {
   return (
     <div className="bg-card text-card-foreground">
       <Routes>
         <Route path="/sign-up" element={<SignupPage />} />
         <Route path="/sign-in" element={<SignInPage />} />
-        <Route path="/workspace" element={<ProtectedRoute><Workspaces /></ProtectedRoute>} />
-        <Route path="/workspace/:id" element={<ProtectedRoute><MainPage /></ProtectedRoute>} />
-        {/* <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} /> */}
+        <Route path="/workspaces" element={<ProtectedRoute><Workspaces /></ProtectedRoute>} />
+        <Route path="/workspace/:id" element={<ProtectedRoute><WorkSpaceApp /></ProtectedRoute>} />
       </Routes>
     </div>
   );
