@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router";
 import { signIn } from "../services/authService";
+import { useAuth } from "../context/AuthContext";
 import { Button } from "@/components/ui/button"
 import {
   Field,
@@ -19,11 +20,13 @@ function SignInForm() {
   } = useForm()
 
   const navigate = useNavigate();
+  const { setUser } = useAuth();
 
   async function onSubmit(data) {
     try {
-      await signIn(data);
-      navigate('/')
+      const user = await signIn(data);
+      setUser(user);
+      navigate('/workspace')
     } catch (err) {
       setError("server", {
         type: "server",
