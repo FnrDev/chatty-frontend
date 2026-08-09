@@ -1,4 +1,4 @@
-import * as React from "react"
+import { useEffect, useState } from "react"
 import { AudioWaveform, ChevronsUpDown, Command, GalleryVerticalEnd, Plus } from "lucide-react"
 
 import {
@@ -8,32 +8,98 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogClose,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
-
-// Mock data — replace with real teams once the backend is wired up.
-const teams = [
-  { name: "Acme Inc", logo: GalleryVerticalEnd },
-  { name: "Acme Corp.", logo: AudioWaveform },
-  { name: "Evil Corp.", logo: Command },
-]
+import {
+  Field,
+  FieldGroup,
+  FieldLabel,
+  FieldSet,
+} from "@/components/ui/field"
+import { Input } from "../ui/input"
+import { Button } from "../ui/button"
+import api from "@/services/api"
+import { useForm } from "react-hook-form"
+import { useNavigate } from "react-router"
 
 export function TeamSwitcher() {
   const { isMobile } = useSidebar()
-  const [activeTeam, setActiveTeam] = React.useState(teams[0])
+  const [workSpaces, setWorkSpaces] = useState([])
+  const [activeTeam, setActiveTeam] = useState(workSpaces[0])
+  const [workSpaceDetails, setWorkSpaceDetails] = useState()
+  const [dialogOpen, setDialogOpen] = useState(false)
+
+  const navigate = useNavigate();
+
+
+  async function selectWorkspace(id) {
+    try {
+      const detailsResponse = await api.get(`/workspaces/${id}`)
+      setWorkSpaceDetails(detailsResponse.data)
+      setActiveTeam(detailsResponse.data)
+      navigate(`/${id}`)
+    } catch (err) {
+      console.log(err)
+    }
+  }
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const response = await api.get("/workspaces")
+        const workspacesData = response.data
+        setWorkSpaces(workspacesData)
+
+        if (workspacesData && workspacesData.length > 0) {
+          await selectWorkspace(workspacesData[0]._id)
+        }
+      } catch (err) {
+        console.log(err)
+      }
+    }
+    loadData()
+  }, [])
+
+  const {
+      register,
+      handleSubmit,
+      formState: { errors },
+      setError
+  } = useForm()
+
+  async function onSubmit(data) {
+    try {
+      const created = await api.post("/workspaces", data)
+      console.log(created.data)
+      setWorkSpaces([...workSpaces, created.data])
+      setDialogOpen(!dialogOpen)
+    } catch (err) {
+      console.log(err)
+      setError("server", {
+        type: "server",
+        message: err.response?.data?.message || "Something went wrong",
+      });
+    }
+  }
 
   if (!activeTeam) {
     return null
   }
 
-  const ActiveLogo = activeTeam.logo
+  const memberCount = activeTeam.members?.length ?? 0
 
   return (
     <SidebarMenu>
@@ -47,12 +113,12 @@ export function TeamSwitcher() {
               />
             }
           >
-            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-              <img width={60} className="rounded-md" height={60} src="https://i.pinimg.com/736x/51/07/05/510705601bbc0bb510cfb0eff2b242d6.jpg" />
+            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-accent text-sidebar-primary-foreground">
+              {activeTeam.name[0].toUpperCase()}
             </div>
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate text-[1rem] font-medium">{activeTeam.name}</span>
-              <span className="text-xs text-muted-foreground">8,720 Member</span>
+              <span className="text-xs text-muted-foreground">{memberCount} {memberCount === 1 ? "Member" : "Members"}</span>
             </div>
             <ChevronsUpDown className="ml-auto" />
           </DropdownMenuTrigger>
@@ -66,16 +132,15 @@ export function TeamSwitcher() {
               <DropdownMenuLabel className="text-xs text-muted-foreground">
                 Workspaces
               </DropdownMenuLabel>
-              {teams.map((team, index) => {
-                const TeamLogo = team.logo
+              {workSpaces.map((team, index) => {
                 return (
                   <DropdownMenuItem
-                    key={team.name}
+                    key={team._id}
                     className="gap-2 p-2"
-                    onClick={() => setActiveTeam(team)}
+                    onClick={() => selectWorkspace(team._id)}
                   >
                     <div className="flex size-6 items-center justify-center rounded-md border">
-                      <TeamLogo className="size-3.5 shrink-0" />
+                      {team.name[0].toUpperCase()}
                     </div>
                     {team.name}
                   </DropdownMenuItem>
@@ -83,7 +148,10 @@ export function TeamSwitcher() {
               })}
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2 p-2">
+            <DropdownMenuItem
+              className="gap-2 p-2"
+              onClick={() => setDialogOpen(true)}
+            >
               <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
                 <Plus className="size-4" />
               </div>
@@ -91,6 +159,33 @@ export function TeamSwitcher() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent showCloseButton={false}>
+            <DialogHeader>
+              <DialogTitle>Create New WorkSpace</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit(onSubmit)}>
+              <FieldSet>
+                <FieldGroup>
+                  <Field>
+                    <FieldLabel htmlFor="name">Name <span className="text-destructive">*</span></FieldLabel>
+                    <Input id="name" {...register("name", {required: true, min: 3, max: 100})} autoComplete="off" placeholder="Set workspace name" />
+                    {errors.name && (<span className="text-red-500 text-sm">{errors.name}</span>)}
+                  </Field>
+                </FieldGroup>
+                <Field orientation="vertical">
+                  <Button type="submit">Create</Button>
+                  <DialogClose
+                    render={<Button variant="outline" className="w-full" type="button" />}
+                  >
+                    Cancel
+                  </DialogClose>
+                </Field>
+              </FieldSet>
+            </form>
+          </DialogContent>
+        </Dialog>
       </SidebarMenuItem>
     </SidebarMenu>
   )
