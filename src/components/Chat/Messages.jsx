@@ -1,21 +1,21 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Bubble,
-  BubbleContent,
-  BubbleGroup,
-  BubbleReactions,
-} from "@/components/ui/bubble";
-import { Marker, MarkerContent } from "@/components/ui/marker";
+import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import {
   Message,
   MessageAvatar,
   MessageContent,
   MessageFooter,
 } from "@/components/ui/message";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Textarea } from "../ui/textarea";
 import { Card } from "../ui/card";
 import { Button } from "../ui/button";
-import { PlusCircle, Send } from "lucide-react";
+import { MoreHorizontal, Pencil, PlusCircle, Send } from "lucide-react";
 import { socket } from "../../socket";
 import { useEffect, useState } from "react";
 import api from "@/services/api";
@@ -24,6 +24,10 @@ import { useAuth } from "@/context/AuthContext";
 
 export function MessageDemo() {
   const [messages, setMessages] = useState([]);
+  const [editingMessageId, setEditingMessageId] = useState(null);
+  const [editText, setEditText] = useState("");
+  const [editError, setEditError] = useState("");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [message, setMessage] = useState({
     textContent: "",
     mediaURL: "",
@@ -40,7 +44,7 @@ export function MessageDemo() {
     }
 
     loadChannelMessages()
-  }, [])
+  }, [id, channelId])
 
   useEffect(() => {
     function handleMessageReceived(receivedMessage) {
@@ -56,6 +60,26 @@ export function MessageDemo() {
 
     return () => {
       socket.off('message_received', handleMessageReceived)
+    }
+  }, [channelId])
+
+  useEffect(() => {
+    function handleMessageEdited(editedMessage) {
+      if (editedMessage.channel !== channelId) return
+
+      setMessages((currentMessages) =>
+        currentMessages.map((currentMessage) =>
+          currentMessage._id === editedMessage._id
+            ? editedMessage
+            : currentMessage
+        )
+      )
+    }
+
+    socket.on('message_edited', handleMessageEdited)
+
+    return () => {
+      socket.off('message_edited', handleMessageEdited)
     }
   }, [channelId])
 
@@ -76,6 +100,55 @@ export function MessageDemo() {
       mediaURL: "",
       mentionEveryone: false,
     })
+  }
+
+  function startEditing(messageToEdit) {
+    setEditingMessageId(messageToEdit._id)
+    setEditText(messageToEdit.textContent || "")
+    setEditError("")
+  }
+
+  function cancelEditing() {
+    setEditingMessageId(null)
+    setEditText("")
+    setEditError("")
+  }
+
+  async function saveEditedMessage() {
+    const textContent = editText.trim()
+
+    if (!textContent) {
+      setEditError("Message cannot be empty")
+      return
+    }
+
+    try {
+      setIsSavingEdit(true)
+      setEditError("")
+
+      await api.patch(
+        `/workspaces/${id}/channels/${channelId}/messages/${editingMessageId}`,
+        { textContent }
+      )
+
+      setMessages((currentMessages) =>
+        currentMessages.map((currentMessage) =>
+          currentMessage._id === editingMessageId
+            ? {
+                ...currentMessage,
+                textContent,
+                editedAt: new Date().toISOString(),
+              }
+            : currentMessage
+        )
+      )
+
+      cancelEditing()
+    } catch (err) {
+      setEditError(err.response?.data?.message || "Could not edit message")
+    } finally {
+      setIsSavingEdit(false)
+    }
   }
 
   function handleOnChange(event) {
@@ -100,21 +173,102 @@ export function MessageDemo() {
 
   return (
     <div className="flex w-full flex-col gap-6 py-12">
-      {messages.map(message => (
-        <Message align={user._id == message.author._id ? "end" : "start"}>
-          <MessageAvatar>
-            <Avatar>
-              <AvatarImage src={message.author.profileImage} alt={message.author.username} />
-              <AvatarFallback>{message.author.username}</AvatarFallback>
-            </Avatar>
-          </MessageAvatar>
-          <MessageContent>
-            <Bubble>
-              <BubbleContent>{message.textContent}</BubbleContent>
-            </Bubble>
-          </MessageContent>
-        </Message>
-      ))}
+      {messages.map((message) => {
+        const author = typeof message.author === "object" ? message.author : null
+        const authorId = author?._id || message.author
+        const isSentMessage = user?._id === authorId
+        const isEditing = editingMessageId === message._id
+
+        return (
+          <Message key={message._id} align={isSentMessage ? "end" : "start"}>
+            <MessageAvatar>
+              <Avatar>
+                <AvatarImage src={author?.profileImage} alt={author?.username} />
+                <AvatarFallback>
+                  {author?.username?.[0]?.toUpperCase() || "?"}
+                </AvatarFallback>
+              </Avatar>
+            </MessageAvatar>
+            <MessageContent>
+              {isEditing ? (
+                <form
+                  className="flex w-full max-w-md flex-col gap-2 self-end"
+                  onSubmit={(event) => {
+                    event.preventDefault()
+                    saveEditedMessage()
+                  }}
+                >
+                  <Textarea
+                    autoFocus
+                    value={editText}
+                    onChange={(event) => setEditText(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Escape") {
+                        cancelEditing()
+                      }
+
+                      if (event.key === "Enter" && !event.shiftKey) {
+                        event.preventDefault()
+                        saveEditedMessage()
+                      }
+                    }}
+                    aria-label="Edit message"
+                    className="min-h-20 resize-none"
+                  />
+                  {editError && (
+                    <span className="text-sm text-destructive">{editError}</span>
+                  )}
+                  <div className="flex justify-end gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={cancelEditing}
+                      disabled={isSavingEdit}
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" size="sm" disabled={isSavingEdit}>
+                      {isSavingEdit ? "Saving..." : "Save"}
+                    </Button>
+                  </div>
+                </form>
+              ) : (
+                <div className={`flex items-center gap-1 ${isSentMessage ? "self-end" : "self-start"}`}>
+                  {isSentMessage && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label="Message options"
+                          />
+                        }
+                      >
+                        <MoreHorizontal className="size-4" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => startEditing(message)}>
+                          <Pencil className="size-4" />
+                          Edit message
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                  <Bubble variant={isSentMessage ? "default" : "muted"}>
+                    <BubbleContent>{message.textContent}</BubbleContent>
+                  </Bubble>
+                </div>
+              )}
+              {message.editedAt && !isEditing && (
+                <MessageFooter>Edited</MessageFooter>
+              )}
+            </MessageContent>
+          </Message>
+        )
+      })}
        <Card className="min-h-max! flex items-start flex-row px-2 py-2! mt-5">
         <Button
           variant={"outline"}
@@ -136,7 +290,7 @@ export function MessageDemo() {
           }
         }}
         ></Textarea>
-        <Button>
+        <Button type="button" onClick={sendMessage} aria-label="Send message">
           <Send />
         </Button>
       </Card>
