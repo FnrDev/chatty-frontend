@@ -15,7 +15,7 @@ function App() {
         <Route path="/sign-up" element={<SignupPage />} />
         <Route path="/sign-in" element={<SignInPage />} />
         <Route path="/workspaces" element={<ProtectedRoute><Workspaces /></ProtectedRoute>} />
-        <Route path="/workspace/:id" element={<ProtectedRoute><WorkSpaceApp /></ProtectedRoute>} />
+        <Route path="/workspaces/:id" element={<ProtectedRoute><WorkSpaceApp /></ProtectedRoute>} />
       </Routes>
     </div>
   );

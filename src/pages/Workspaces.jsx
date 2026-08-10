@@ -76,7 +76,7 @@ function Workspaces() {
               key={workspace._id}
               workspace={workspace}
               isOwner={workspace.owner === user?._id}
-              onOpen={() => navigate(`/workspace/${workspace._id}`)}
+              onOpen={() => navigate(`/workspaces/${workspace._id}`)}
             />
           ))}
         </WorkspaceGrid>

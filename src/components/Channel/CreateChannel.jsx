@@ -35,7 +35,7 @@ export default function CreateChannel({ open, onOpenChange, onCreated }) {
 
   async function onSubmit(data) {
     try {
-      const created = await api.post("/channels", {
+      const created = await api.post(`/workspace/${params.id}/channels`, {
         name: data.name,  
         description: data.description,
         owner: user.id,

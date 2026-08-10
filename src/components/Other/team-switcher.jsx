@@ -36,7 +36,7 @@ export function TeamSwitcher() {
       const detailsResponse = await api.get(`/workspaces/${id}`)
       setWorkSpaceDetails(detailsResponse.data)
       setActiveTeam(detailsResponse.data)
-      navigate(`/workspace/${id}`)
+      navigate(`/workspaces/${id}`)
     } catch (err) {
       console.log(err)
     }
