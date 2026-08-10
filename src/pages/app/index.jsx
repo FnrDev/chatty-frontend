@@ -2,7 +2,6 @@ import Layout from '@/components/Layout/Layout'
 import { getWorkSpaceData } from '@/services/workSpace'
 import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router'
-import { DataTable } from './data-table'
 
 function WorkSpaceApp() {
 
@@ -31,12 +30,18 @@ function WorkSpaceApp() {
     <Layout>
       <div className='flex justify-center flex-col items-center mt-5'>
         <h1 className='text-2xl'>{workSpace.name}</h1>
-        <div className='flex flex-col'>
+        <div className='flex flex-col bg-sidebar-accent rounded-lg border-accent w-[50%] mx-auto p-3 mt-5'>
             {
             loading ? (
               <p>Loading...</p>
             ) : (
-              <DataTable data={workSpace.members} />
+                workSpace.members.map((e) => {
+                  return (
+                    <div key={e._id}>
+                      <p>{e.user.username}</p>
+                    </div>
+                  )
+                })
             )
           }
         </div>
