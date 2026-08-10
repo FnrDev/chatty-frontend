@@ -12,10 +12,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Textarea } from "../ui/textarea";
 import { Card } from "../ui/card";
 import { Button } from "../ui/button";
-import { MoreHorizontal, Pencil, PlusCircle, Send } from "lucide-react";
+import { MoreHorizontal, Pencil, PlusCircle, Send, Trash2 } from "lucide-react";
 import { socket } from "../../socket";
 import { useEffect, useState } from "react";
 import api from "@/services/api";
@@ -28,6 +38,9 @@ export function MessageDemo() {
   const [editText, setEditText] = useState("");
   const [editError, setEditError] = useState("");
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [deletingMessage, setDeletingMessage] = useState(null);
+  const [deleteError, setDeleteError] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
   const [message, setMessage] = useState({
     textContent: "",
     mediaURL: "",
@@ -80,6 +93,24 @@ export function MessageDemo() {
 
     return () => {
       socket.off('message_edited', handleMessageEdited)
+    }
+  }, [channelId])
+
+  useEffect(() => {
+    function handleMessageDeleted(deletedMessage) {
+      if (deletedMessage.channel !== channelId) return
+
+      setMessages((currentMessages) =>
+        currentMessages.filter(
+          (currentMessage) => currentMessage._id !== deletedMessage._id
+        )
+      )
+    }
+
+    socket.on('message_deleted', handleMessageDeleted)
+
+    return () => {
+      socket.off('message_deleted', handleMessageDeleted)
     }
   }, [channelId])
 
@@ -148,6 +179,31 @@ export function MessageDemo() {
       setEditError(err.response?.data?.message || "Could not edit message")
     } finally {
       setIsSavingEdit(false)
+    }
+  }
+
+  async function deleteMessage() {
+    if (!deletingMessage) return
+
+    try {
+      setIsDeleting(true)
+      setDeleteError("")
+
+      await api.delete(
+        `/workspaces/${id}/channels/${channelId}/messages/${deletingMessage._id}`
+      )
+
+      setMessages((currentMessages) =>
+        currentMessages.filter(
+          (currentMessage) => currentMessage._id !== deletingMessage._id
+        )
+      )
+
+      setDeletingMessage(null)
+    } catch (err) {
+      setDeleteError(err.response?.data?.message || "Could not delete message")
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -254,6 +310,16 @@ export function MessageDemo() {
                           <Pencil className="size-4" />
                           Edit message
                         </DropdownMenuItem>
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => {
+                            setDeletingMessage(message)
+                            setDeleteError("")
+                          }}
+                        >
+                          <Trash2 className="size-4" />
+                          Delete message
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   )}
@@ -294,6 +360,37 @@ export function MessageDemo() {
           <Send />
         </Button>
       </Card>
+      <AlertDialog
+        open={Boolean(deletingMessage)}
+        onOpenChange={(open) => {
+          if (!open && !isDeleting) {
+            setDeletingMessage(null)
+            setDeleteError("")
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this message?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This message will be removed for everyone in the channel.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {deleteError && (
+            <p className="text-sm text-destructive">{deleteError}</p>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={deleteMessage}
+              disabled={isDeleting}
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
