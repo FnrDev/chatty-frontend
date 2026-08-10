@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { Plus } from "lucide-react";
+import { LogIn, Plus } from "lucide-react";
 
 import api from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
 import CreateWorkspace from "@/components/Workspace/CreateWorkspace";
+import JoinWorkspace from "@/components/Workspace/JoinWorkspace";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,6 +23,7 @@ function Workspaces() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [joinDialogOpen, setJoinDialogOpen] = useState(false);
 
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -68,7 +70,10 @@ function Workspaces() {
           ))}
         </WorkspaceGrid>
       ) : workspaces.length === 0 ? (
-        <EmptyWorkspaces onCreate={() => setDialogOpen(true)} />
+        <EmptyWorkspaces
+          onCreate={() => setDialogOpen(true)}
+          onJoin={() => setJoinDialogOpen(true)}
+        />
       ) : (
         <WorkspaceGrid>
           {workspaces.map((workspace) => (
@@ -85,7 +90,16 @@ function Workspaces() {
       <CreateWorkspace
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        onCreated={(workspace) => setWorkspaces([...workspaces, workspace])}
+        onCreated={(workspace) =>
+          setWorkspaces((currentWorkspaces) => [...currentWorkspaces, workspace])
+        }
+      />
+      <JoinWorkspace
+        open={joinDialogOpen}
+        onOpenChange={setJoinDialogOpen}
+        onJoined={(workspace) =>
+          setWorkspaces((currentWorkspaces) => [...currentWorkspaces, workspace])
+        }
       />
     </div>
   );
@@ -144,7 +158,7 @@ function WorkspaceCardSkeleton() {
   );
 }
 
-function EmptyWorkspaces({ onCreate }) {
+function EmptyWorkspaces({ onCreate, onJoin }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-border px-6 py-16 text-center">
       <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
@@ -155,10 +169,16 @@ function EmptyWorkspaces({ onCreate }) {
         You are not part of any workspace. Create one to start adding channels
         and inviting people, or join an existing one with an invite code.
       </p>
-      <Button className="mt-6" onClick={onCreate}>
-        <Plus className="size-4" />
-        Create Workspace
-      </Button>
+      <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+        <Button onClick={onJoin}>
+          <LogIn className="size-4" />
+          Join Workspace
+        </Button>
+        <Button variant="outline" onClick={onCreate}>
+          <Plus className="size-4" />
+          Create Workspace
+        </Button>
+      </div>
     </div>
   );
 }
