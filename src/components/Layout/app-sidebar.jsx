@@ -7,13 +7,31 @@ import {
 import { TeamSwitcher } from "../Other/team-switcher"
 import CreateChannel from "../Channel/CreateChannel"
 import { useAuth } from "@/context/AuthContext"
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import api from "@/services/api"
+import { useParams } from "react-router"
+import { Hash } from "lucide-react"
 
 export function AppSidebar(props) {
 
   const { user } = useAuth()
   const [channels, setChannels] = useState([])
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  const { id } = useParams()
+
+  async function getChannels() {
+   try {
+    const response = await api.get(`/workspace/${id}/channels`)
+    setChannels(...channels, response.data)
+   } catch(err) {
+    console.log(err)
+   }
+  }
+
+  useEffect(() => {
+    getChannels()
+  }, [])
 
   return (
     <Sidebar {...props} >
@@ -33,9 +51,11 @@ export function AppSidebar(props) {
         <div className="flex flex-col gap-3 mt-5">
           {channels.map((e) => {
           return(
-            <div className="flex p-1.5 px-3 flex-col gap-1 bg-sidebar-accent rounded-lg">
-              <p className="text-[14px]"># {e.name}</p>
+           <a href={`/workspaces/${id}/${e._id}`}>
+             <div className="flex p-2 px-3 flex-col gap-1 bg-sidebar-accent rounded-lg">
+              <p className="text-[14px] flex items-center gap-2"><Hash size={15} className="text-white/60" /> {e.name}</p>
             </div>
+           </a>
           )
         })}
         </div>

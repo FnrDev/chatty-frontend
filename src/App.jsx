@@ -8,6 +8,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 // import { useAuth } from "./context/AuthContext";
 import Workspaces from "./pages/Workspaces";
 import WorkSpaceApp from "./pages/app";
+import Chat from "./components/Chat";
 function App() {
   return (
     <div className="bg-card text-card-foreground">
@@ -16,6 +17,7 @@ function App() {
         <Route path="/sign-in" element={<SignInPage />} />
         <Route path="/workspaces" element={<ProtectedRoute><Workspaces /></ProtectedRoute>} />
         <Route path="/workspaces/:id" element={<ProtectedRoute><WorkSpaceApp /></ProtectedRoute>} />
+        <Route path="/workspaces/:id/:channelId" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
       </Routes>
     </div>
   );

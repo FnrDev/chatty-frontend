@@ -31,15 +31,19 @@ export function TeamSwitcher() {
   const { id: routeId } = useParams()
 
 
-  async function selectWorkspace(id) {
+  async function loadWorkspace(id) {
     try {
       const detailsResponse = await api.get(`/workspaces/${id}`)
       setWorkSpaceDetails(detailsResponse.data)
       setActiveTeam(detailsResponse.data)
-      navigate(`/workspaces/${id}`)
     } catch (err) {
       console.log(err)
     }
+  }
+
+  async function selectWorkspace(id) {
+    await loadWorkspace(id)
+    navigate(`/workspaces/${id}`)
   }
 
   useEffect(() => {
@@ -49,9 +53,11 @@ export function TeamSwitcher() {
         const workspacesData = response.data
         setWorkSpaces(workspacesData)
 
-        const targetId = routeId ?? workspacesData?.[0]?._id
-        if (targetId) {
-          await selectWorkspace(targetId)
+        if (routeId) {
+          // already on a workspace URL (possibly with a channel) — just load it
+          await loadWorkspace(routeId)
+        } else if (workspacesData?.[0]?._id) {
+          await selectWorkspace(workspacesData[0]._id)
         }
       } catch (err) {
         console.log(err)
