@@ -31,6 +31,7 @@ import { useEffect, useState } from "react";
 import api from "@/services/api";
 import { useParams } from 'react-router'
 import { useAuth } from "@/context/AuthContext";
+import { uploadImage } from "@/services/uploadImage";
 
 export function MessageDemo() {
   const [messages, setMessages] = useState([]);
@@ -116,7 +117,6 @@ export function MessageDemo() {
 
   function sendMessage() {
     if (!message.textContent.trim()) return;
-    console.log(message)
 
     socket.emit('send_message', {
       ...message,
@@ -207,17 +207,18 @@ export function MessageDemo() {
     }
   }
 
-  function handleOnChange(event) {
+  async function handleOnChange(event) {
     const { name, value, type, files } = event.target
     if (type === "file") {
       const file = files[0]
 
+      const data = await uploadImage(file)
+
       setMessage((prev) => ({
         ...prev,
-        [name]: file,
+        mediaURL: data.url,
         mediaMimeType: file.type || ""
       }))
-
       return
     }
 
@@ -227,6 +228,8 @@ export function MessageDemo() {
     }))
   }
 
+
+  console.log(message)
   return (
     <div className="flex w-full flex-col gap-6 py-12">
       {messages.map((message) => {
@@ -324,7 +327,12 @@ export function MessageDemo() {
                     </DropdownMenu>
                   )}
                   <Bubble variant={isSentMessage ? "default" : "muted"}>
-                    <BubbleContent>{message.textContent}</BubbleContent>
+                    <BubbleContent>
+                      {message.textContent}
+                      {message.mediaURL && (
+                      <img className="rounded-lg mt-2" width={300} height={300} src={message.mediaURL} alt={message.mediaURL} />
+                    )}
+                    </BubbleContent>
                   </Bubble>
                 </div>
               )}
@@ -339,9 +347,9 @@ export function MessageDemo() {
         <Button
           variant={"outline"}
           aria-label="Attach a file"
-          render={<label htmlFor="chat-file" className="cursor-pointer" />}
+          render={<label htmlFor="mediaURL" className="cursor-pointer" />}
         >
-          <input id="chat-file" type="file" className="sr-only" onChange={handleOnChange} />
+          <input id="mediaURL" name="mediaURL" type="file" className="sr-only" onChange={handleOnChange} />
           <PlusCircle />
         </Button>
         <Textarea
