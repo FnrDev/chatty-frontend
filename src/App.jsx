@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Route, Routes } from "react-router";
+import { Navigate, Route, Routes } from "react-router";
 import SignupPage from "./pages/SignupPage";
 import SignInPage from "./pages/SigninPage";
 // import { useEffect } from "react";
@@ -9,10 +8,21 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Workspaces from "./pages/Workspaces";
 import WorkSpaceApp from "./pages/app";
 import Chat from "./components/Chat";
+import { useAuth } from "./context/AuthContext";
+
+function DefaultRoute() {
+  const { user, loading } = useAuth();
+
+  if (loading) return <p>Loading...</p>;
+
+  return <Navigate to={user ? "/workspaces" : "/sign-in"} replace />;
+}
+
 function App() {
   return (
     <div className="bg-card text-card-foreground">
       <Routes>
+        <Route path="/" element={<DefaultRoute />} />
         <Route path="/sign-up" element={<SignupPage />} />
         <Route path="/sign-in" element={<SignInPage />} />
         <Route path="/workspaces" element={<ProtectedRoute><Workspaces /></ProtectedRoute>} />
