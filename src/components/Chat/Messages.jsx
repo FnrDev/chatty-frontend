@@ -25,15 +25,16 @@ import {
 import { Textarea } from "../ui/textarea";
 import { Card } from "../ui/card";
 import { Button } from "../ui/button";
-import { MoreHorizontal, Pencil, PlusCircle, Send, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Pin, PinOff, PlusCircle, Send, Trash2 } from "lucide-react";
 import { socket } from "../../socket";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import api from "@/services/api";
 import { useParams } from 'react-router'
 import { useAuth } from "@/context/AuthContext";
 import { uploadImage } from "@/services/uploadImage";
 
 export function MessageDemo() {
+  const messagesContainerRef = useRef(null);
   const [messages, setMessages] = useState([]);
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editText, setEditText] = useState("");
@@ -42,6 +43,9 @@ export function MessageDemo() {
   const [deletingMessage, setDeletingMessage] = useState(null);
   const [deleteError, setDeleteError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [pinnedMessageIds, setPinnedMessageIds] = useState(() => new Set());
+  const [pinningMessageId, setPinningMessageId] = useState(null);
+  const [pinError, setPinError] = useState("");
   const [message, setMessage] = useState({
     textContent: "",
     mediaURL: "",
@@ -50,6 +54,7 @@ export function MessageDemo() {
   });
   const { id, channelId } = useParams()
   const { user } = useAuth()
+  const lastMessageId = messages[messages.length - 1]?._id
 
   useEffect(() => {
     async function loadChannelMessages() {
@@ -59,6 +64,75 @@ export function MessageDemo() {
 
     loadChannelMessages()
   }, [id, channelId])
+
+  useEffect(() => {
+    const container = messagesContainerRef.current
+    if (!container) return
+
+    const frame = requestAnimationFrame(() => {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: "smooth",
+      })
+    })
+
+    return () => cancelAnimationFrame(frame)
+  }, [channelId, lastMessageId])
+
+  useEffect(() => {
+    let ignore = false
+
+    async function loadPins() {
+      try {
+        const response = await api.get(
+          `/workspaces/${id}/channels/${channelId}/pins`
+        )
+        if (!ignore) {
+          setPinnedMessageIds(
+            new Set(response.data.map((pin) => String(pin.message?._id || pin.message)))
+          )
+          setPinError("")
+        }
+      } catch (err) {
+        if (!ignore) {
+          setPinError(err.response?.data?.message || "Could not load pinned messages")
+        }
+      }
+    }
+
+    loadPins()
+
+    return () => {
+      ignore = true
+    }
+  }, [id, channelId])
+
+  useEffect(() => {
+    function handlePinCreated(pin) {
+      if (String(pin.channel) !== channelId) return
+
+      const messageId = String(pin.message?._id || pin.message)
+      setPinnedMessageIds((currentIds) => new Set(currentIds).add(messageId))
+    }
+
+    function handlePinDeleted(pin) {
+      if (String(pin.channel) !== channelId) return
+
+      setPinnedMessageIds((currentIds) => {
+        const nextIds = new Set(currentIds)
+        nextIds.delete(String(pin.message))
+        return nextIds
+      })
+    }
+
+    socket.on("message_pin_created", handlePinCreated)
+    socket.on("message_pin_deleted", handlePinDeleted)
+
+    return () => {
+      socket.off("message_pin_created", handlePinCreated)
+      socket.off("message_pin_deleted", handlePinDeleted)
+    }
+  }, [channelId])
 
   useEffect(() => {
     function handleMessageReceived(receivedMessage) {
@@ -207,6 +281,40 @@ export function MessageDemo() {
     }
   }
 
+  async function toggleMessagePin(messageToToggle) {
+    const messageId = messageToToggle._id
+    const isPinned = pinnedMessageIds.has(messageId)
+
+    try {
+      setPinningMessageId(messageId)
+      setPinError("")
+
+      if (isPinned) {
+        await api.delete(
+          `/workspaces/${id}/channels/${channelId}/messages/${messageId}/pin`
+        )
+      } else {
+        await api.post(
+          `/workspaces/${id}/channels/${channelId}/messages/${messageId}/pin`
+        )
+      }
+
+      setPinnedMessageIds((currentIds) => {
+        const nextIds = new Set(currentIds)
+        if (isPinned) nextIds.delete(messageId)
+        else nextIds.add(messageId)
+        return nextIds
+      })
+    } catch (err) {
+      setPinError(
+        err.response?.data?.message ||
+          `Could not ${isPinned ? "unpin" : "pin"} message`
+      )
+    } finally {
+      setPinningMessageId(null)
+    }
+  }
+
   async function handleOnChange(event) {
     const { name, value, type, files } = event.target
     if (type === "file") {
@@ -229,13 +337,17 @@ export function MessageDemo() {
   }
   return (
     <div className="flex min-h-0 w-full flex-1 flex-col">
-      <div className="min-h-0 flex-1 overflow-y-auto py-4">
+      <div
+        ref={messagesContainerRef}
+        className="min-h-0 flex-1 overflow-y-auto py-4"
+      >
         <div className="flex flex-col gap-6">
           {messages.map((message) => {
             const author = typeof message.author === "object" ? message.author : null
             const authorId = author?._id || message.author
             const isSentMessage = user?._id === authorId
             const isEditing = editingMessageId === message._id
+            const isPinned = pinnedMessageIds.has(message._id)
 
             return (
               <Message key={message._id} align={isSentMessage ? "end" : "start"}>
@@ -293,8 +405,7 @@ export function MessageDemo() {
                 </form>
               ) : (
                 <div className={`flex items-center gap-1 ${isSentMessage ? "self-end" : "self-start"}`}>
-                  {isSentMessage && (
-                    <DropdownMenu>
+                  <DropdownMenu>
                       <DropdownMenuTrigger
                         render={
                           <Button
@@ -308,23 +419,37 @@ export function MessageDemo() {
                         <MoreHorizontal className="size-4" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => startEditing(message)}>
-                          <Pencil className="size-4" />
-                          Edit message
-                        </DropdownMenuItem>
                         <DropdownMenuItem
-                          variant="destructive"
-                          onClick={() => {
-                            setDeletingMessage(message)
-                            setDeleteError("")
-                          }}
+                          disabled={pinningMessageId === message._id}
+                          onClick={() => toggleMessagePin(message)}
                         >
-                          <Trash2 className="size-4" />
-                          Delete message
+                          {isPinned ? (
+                            <PinOff className="size-4" />
+                          ) : (
+                            <Pin className="size-4" />
+                          )}
+                          {isPinned ? "Unpin message" : "Pin message"}
                         </DropdownMenuItem>
+                        {isSentMessage && (
+                          <>
+                            <DropdownMenuItem onClick={() => startEditing(message)}>
+                              <Pencil className="size-4" />
+                              Edit message
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onClick={() => {
+                                setDeletingMessage(message)
+                                setDeleteError("")
+                              }}
+                            >
+                              <Trash2 className="size-4" />
+                              Delete message
+                            </DropdownMenuItem>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
-                  )}
                   <Bubble variant={isSentMessage ? "default" : "muted"}>
                     <BubbleContent>
                       {message.textContent}
@@ -335,8 +460,16 @@ export function MessageDemo() {
                   </Bubble>
                 </div>
               )}
-              {message.editedAt && !isEditing && (
-                <MessageFooter>Edited</MessageFooter>
+              {!isEditing && (message.editedAt || isPinned) && (
+                <MessageFooter className="gap-2">
+                  {isPinned && (
+                    <span className="inline-flex items-center gap-1">
+                      <Pin className="size-3" />
+                      Pinned
+                    </span>
+                  )}
+                  {message.editedAt && <span>Edited</span>}
+                </MessageFooter>
               )}
             </MessageContent>
               </Message>
@@ -344,6 +477,9 @@ export function MessageDemo() {
           })}
         </div>
       </div>
+      {pinError && (
+        <p className="mb-2 text-sm text-destructive">{pinError}</p>
+      )}
       <Card className="mt-3 flex min-h-max! shrink-0 flex-row items-start px-2 py-2!">
         <Button
           variant={"outline"}

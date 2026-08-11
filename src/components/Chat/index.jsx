@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react"
-import { Bookmark, Hash, MessageCircle } from "lucide-react"
+import { Bookmark, Hash, MessageCircle, Pin } from "lucide-react"
 import { useParams } from "react-router"
 
 import Layout from '../Layout/Layout'
 import { MessageDemo } from './Messages'
 import ChannelBookmarks from './ChannelBookmarks'
+import ChannelPins from './ChannelPins'
 import api from '@/services/api'
 
 export default function Chat() {
@@ -57,14 +58,22 @@ export default function Chat() {
             label="Bookmarks"
             onClick={() => setActiveTab("bookmarks")}
           />
+          <ChannelTab
+            active={activeTab === "pins"}
+            icon={Pin}
+            label="Pins"
+            onClick={() => setActiveTab("pins")}
+          />
         </div>
       )}
       contentClassName="flex"
     >
-      {activeTab === "messages" ? (
-        <MessageDemo />
-      ) : (
+      {activeTab === "messages" && <MessageDemo />}
+      {activeTab === "bookmarks" && (
         <ChannelBookmarks workspaceId={id} channelId={channelId} />
+      )}
+      {activeTab === "pins" && (
+        <ChannelPins workspaceId={id} channelId={channelId} />
       )}
     </Layout>
   )

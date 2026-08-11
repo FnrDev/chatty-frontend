@@ -42,10 +42,12 @@ export function AppSidebar(props) {
   return (
     <Sidebar {...props} >
       <SidebarHeader className="px-2.5">
-        <div className="flex items-center gap-1 mb-1">
-          <img src="/logo.svg" width={50} height={50} />
-          <h2 className="text-2xl">Chatty</h2>
-        </div>
+        <Link to={'/'}>
+          <div className="flex items-center gap-1 mb-1">
+            <img src="/logo.svg" width={50} height={50} />
+            <h2 className="text-2xl">Chatty</h2>
+          </div>
+        </Link>
       <TeamSwitcher />
       </SidebarHeader>
       <SidebarContent className="px-2.5 mt-1">
