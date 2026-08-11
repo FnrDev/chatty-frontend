@@ -480,8 +480,12 @@ export function MessageDemo() {
       {pinError && (
         <p className="mb-2 text-sm text-destructive">{pinError}</p>
       )}
-      <Card className="mt-3 flex min-h-max! shrink-0 flex-row items-start px-2 py-2!">
-        <Button
+      <Card className="mt-3 flex flex-col min-h-max! gap-3! shrink-0 items-start px-2 py-2!">
+         {message.mediaURL && (
+          <img width={100} className="rounded-lg" height={100} src={message.mediaURL} alt={message.mediaURL} />
+        )}
+       <div className="flex items-center w-full flex-row">
+         <Button
           variant={"outline"}
           aria-label="Attach a file"
           render={<label htmlFor="mediaURL" className="cursor-pointer" />}
@@ -505,6 +509,7 @@ export function MessageDemo() {
         <Button type="button" onClick={sendMessage} aria-label="Send message">
           <Send />
         </Button>
+       </div>
       </Card>
       <AlertDialog
         open={Boolean(deletingMessage)}
