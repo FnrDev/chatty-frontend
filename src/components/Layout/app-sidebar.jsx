@@ -20,18 +20,24 @@ export function AppSidebar(props) {
 
   const { id } = useParams()
 
-  async function getChannels() {
-   try {
-    const response = await api.get(`/workspaces/${id}/channels`)
-    setChannels(...channels, response.data)
-   } catch(err) {
-    console.log(err)
-   }
-  }
-
   useEffect(() => {
+    let ignore = false
+
+    async function getChannels() {
+      try {
+        const response = await api.get(`/workspaces/${id}/channels`)
+        if (!ignore) setChannels(response.data)
+      } catch(err) {
+        console.log(err)
+      }
+    }
+
     getChannels()
-  }, [])
+
+    return () => {
+      ignore = true
+    }
+  }, [id])
 
   return (
     <Sidebar {...props} >
@@ -46,12 +52,14 @@ export function AppSidebar(props) {
         <CreateChannel 
            open={dialogOpen}
            onOpenChange={setDialogOpen}
-           onCreated={(workspace) => setChannels([...channels, workspace])}
+           onCreated={(workspace) =>
+             setChannels((currentChannels) => [...currentChannels, workspace])
+           }
         />
         <div className="flex flex-col gap-3 mt-5">
           {channels.map((e) => {
           return(
-           <Link to={`/workspaces/${id}/${e._id}`}>
+           <Link key={e._id} to={`/workspaces/${id}/${e._id}`}>
              <div className="flex p-2 px-3 flex-col gap-1 bg-sidebar-accent rounded-lg">
               <p className="text-[14px] flex items-center gap-2"><Hash size={15} className="text-white/60" /> {e.name}</p>
             </div>

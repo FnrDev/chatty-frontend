@@ -46,17 +46,26 @@ function Workspaces() {
 
   return (
     <div className="mx-auto w-full max-w-6xl p-6">
-      <div className="mb-6 flex items-start justify-between gap-4">
+      <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row">
         <div>
           <h1 className="font-heading text-2xl font-medium">Workspaces</h1>
           <p className="text-sm text-muted-foreground">
             Every workspace you own or belong to.
           </p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
-          <Plus className="size-4" />
-          Create Workspace
-        </Button>
+        <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row">
+          <Button
+            variant="outline"
+            onClick={() => setJoinDialogOpen(true)}
+          >
+            <LogIn className="size-4" />
+            Join Workspace
+          </Button>
+          <Button onClick={() => setDialogOpen(true)}>
+            <Plus className="size-4" />
+            Create Workspace
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -130,8 +139,6 @@ function WorkspaceCard({ workspace, isOwner, onOpen }) {
         <CardTitle className="truncate">{workspace.name}</CardTitle>
         <CardDescription>
           Invite code {workspace.code}
-          {workspace.createdAt &&
-            ` · created ${new Date(workspace.createdAt).toLocaleDateString()}`}
         </CardDescription>
       </CardHeader>
       <CardFooter>

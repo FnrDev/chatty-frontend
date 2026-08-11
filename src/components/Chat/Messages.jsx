@@ -227,19 +227,18 @@ export function MessageDemo() {
       [name]: value
     }))
   }
-
-
-  console.log(message)
   return (
-    <div className="flex w-full flex-col gap-6 py-12">
-      {messages.map((message) => {
-        const author = typeof message.author === "object" ? message.author : null
-        const authorId = author?._id || message.author
-        const isSentMessage = user?._id === authorId
-        const isEditing = editingMessageId === message._id
+    <div className="flex min-h-0 w-full flex-1 flex-col">
+      <div className="min-h-0 flex-1 overflow-y-auto py-4">
+        <div className="flex flex-col gap-6">
+          {messages.map((message) => {
+            const author = typeof message.author === "object" ? message.author : null
+            const authorId = author?._id || message.author
+            const isSentMessage = user?._id === authorId
+            const isEditing = editingMessageId === message._id
 
-        return (
-          <Message key={message._id} align={isSentMessage ? "end" : "start"}>
+            return (
+              <Message key={message._id} align={isSentMessage ? "end" : "start"}>
             <MessageAvatar>
               <Avatar>
                 <AvatarImage src={author?.profileImage} alt={author?.username} />
@@ -340,10 +339,12 @@ export function MessageDemo() {
                 <MessageFooter>Edited</MessageFooter>
               )}
             </MessageContent>
-          </Message>
-        )
-      })}
-       <Card className="min-h-max! flex items-start flex-row px-2 py-2! mt-5">
+              </Message>
+            )
+          })}
+        </div>
+      </div>
+      <Card className="mt-3 flex min-h-max! shrink-0 flex-row items-start px-2 py-2!">
         <Button
           variant={"outline"}
           aria-label="Attach a file"
@@ -355,6 +356,7 @@ export function MessageDemo() {
         <Textarea
         name="textContent"
         value={message.textContent}
+        placeholder="Write a message..."
         className="bg-transparent! resize-none min-h-max! border-none! focus:ring-0!"
         onChange={handleOnChange}
         onKeyDown={(e) => {
