@@ -24,6 +24,11 @@ async function getCurrentUser(){
 
 }
 
+async function updateCurrentUser(formData) {
+    const response = await api.patch("/auth/me", formData);
+    return response.data;
+}
+
 
 
 function logout(){
@@ -36,6 +41,6 @@ export {
   signUp,
   signIn,
   getCurrentUser,
+  updateCurrentUser,
   logout
 };
-

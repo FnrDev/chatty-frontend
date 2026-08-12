@@ -6,22 +6,22 @@ import {
 } from "@/components/ui/sidebar"
 import { TeamSwitcher } from "../Other/team-switcher"
 import CreateChannel from "../Channel/CreateChannel"
-import { useAuth } from "@/context/AuthContext"
 import { useEffect, useState } from "react"
 import api from "@/services/api"
 import { Link, useParams } from "react-router"
 import { Hash } from "lucide-react"
 import WorkSpaceSettings from "../Channel/WorkSpaceSettings"
+import UserProfileSettings from "./UserProfileSettings"
 
 export function AppSidebar(props) {
 
-  const { user } = useAuth()
   const [channels, setChannels] = useState([])
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogWorkSpace, setDialogWorkSpace] = useState(false);
+  const [dialogProfile, setDialogProfile] = useState(false);
   const [updatedWorkspace, setUpdatedWorkspace] = useState(null);
 
-  const { id } = useParams()
+  const { id, channelId } = useParams()
 
   useEffect(() => {
     let ignore = false
@@ -70,7 +70,7 @@ export function AppSidebar(props) {
           {channels.map((e) => {
           return(
            <Link key={e._id} to={`/workspaces/${id}/${e._id}`}>
-             <div className="flex p-2 px-3 flex-col gap-1 bg-sidebar-accent rounded-lg">
+             <div className={`flex flex-col gap-1 rounded-lg p-2 px-3 ${channelId === e._id ? "bg-sidebar-accent" : ""}`}>
               <p className="text-[14px] flex items-center gap-2"><Hash size={15} className="text-white/60" /> {e.name}</p>
             </div>
            </Link>
@@ -79,10 +79,10 @@ export function AppSidebar(props) {
         </div>
       </SidebarContent>
       <SidebarFooter>
-        <div className="bg-popover rounded-md flex items-center gap-3 p-3">
-          <img width={40} className="rounded-md" height={40} src={user.profileImage} />
-          <p>{user.username}</p>
-        </div>
+        <UserProfileSettings
+          open={dialogProfile}
+          onOpenChange={setDialogProfile}
+        />
       </SidebarFooter> 
     </Sidebar>
   )
