@@ -32,6 +32,17 @@ export default function Chat() {
     }
   }, [id, channelId])
 
+  useEffect(() => {
+    function handleChannelUpdated(event) {
+      if (event.detail?._id === channelId) {
+        setChannelName(event.detail.name)
+      }
+    }
+
+    window.addEventListener("channel-updated", handleChannelUpdated)
+    return () => window.removeEventListener("channel-updated", handleChannelUpdated)
+  }, [channelId])
+
   return (
     <Layout
       headerTitle={(

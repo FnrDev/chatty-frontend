@@ -8,10 +8,11 @@ import { TeamSwitcher } from "../Other/team-switcher"
 import CreateChannel from "../Channel/CreateChannel"
 import { useEffect, useState } from "react"
 import api from "@/services/api"
-import { Link, useParams } from "react-router"
-import { Hash } from "lucide-react"
+import { Link, useNavigate, useParams } from "react-router"
+import { Hash, Users } from "lucide-react"
 import WorkSpaceSettings from "../Channel/WorkSpaceSettings"
 import UserProfileSettings from "./UserProfileSettings"
+import ChannelActions from "../Channel/ChannelActions"
 
 export function AppSidebar(props) {
 
@@ -22,6 +23,17 @@ export function AppSidebar(props) {
   const [updatedWorkspace, setUpdatedWorkspace] = useState(null);
 
   const { id, channelId } = useParams()
+  const navigate = useNavigate()
+
+  function handleChannelDeleted(deletedChannelId) {
+    setChannels((currentChannels) =>
+      currentChannels.filter((channel) => channel._id !== deletedChannelId)
+    )
+
+    if (channelId === deletedChannelId) {
+      navigate(`/workspaces/${id}`, { replace: true })
+    }
+  }
 
   useEffect(() => {
     let ignore = false
@@ -66,14 +78,36 @@ export function AppSidebar(props) {
              setChannels((currentChannels) => [...currentChannels, workspace])
            }
         />
-        <div className="flex flex-col gap-3 mt-5">
+        <div className="mt-5 flex flex-col gap-3">
+          <Link to={`/workspaces/${id}`}>
+            <div className={`flex items-center gap-2 rounded-lg p-2 px-3 ${!channelId ? "bg-sidebar-accent" : ""}`}>
+              <Users size={15} className="text-white/60" />
+              <span className="text-[14px]">Members</span>
+            </div>
+          </Link>
           {channels.map((e) => {
           return(
-           <Link key={e._id} to={`/workspaces/${id}/${e._id}`}>
-             <div className={`flex flex-col gap-1 rounded-lg p-2 px-3 ${channelId === e._id ? "bg-sidebar-accent" : ""}`}>
-              <p className="text-[14px] flex items-center gap-2"><Hash size={15} className="text-white/60" /> {e.name}</p>
-            </div>
-           </Link>
+             <div key={e._id} className={`flex items-center rounded-lg ${channelId === e._id ? "bg-sidebar-accent" : ""}`}>
+              <Link
+                className="flex min-w-0 flex-1 items-center gap-2 p-2 px-3"
+                to={`/workspaces/${id}/${e._id}`}
+              >
+                <Hash size={15} className="shrink-0 text-white/60" />
+                <span className="truncate text-[14px]">{e.name}</span>
+              </Link>
+              <ChannelActions
+                channel={e}
+                workspaceId={id}
+                onUpdated={(updatedChannel) =>
+                  setChannels((currentChannels) =>
+                    currentChannels.map((channel) =>
+                      channel._id === updatedChannel._id ? updatedChannel : channel
+                    )
+                  )
+                }
+                onDeleted={handleChannelDeleted}
+              />
+             </div>
           )
         })}
         </div>
