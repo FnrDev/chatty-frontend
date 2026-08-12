@@ -238,10 +238,12 @@ export function MessageDemo() {
   }, [channelId])
 
   function sendMessage() {
-    if (!message.textContent.trim()) return;
+    const textContent = message.textContent.trim()
+    if (!textContent && !message.mediaURL) return
 
     socket.emit('send_message', {
       ...message,
+      textContent,
       channelId,
       workspaceId: id,
       author: user._id
@@ -432,6 +434,7 @@ export function MessageDemo() {
             const isSentMessage = user?._id === authorId
             const isEditing = editingMessageId === message._id
             const isPinned = pinnedMessageIds.has(message._id)
+            const hasTextContent = Boolean(message.textContent?.trim())
             const reactionGroups = groupReactions(message.reactions, user?._id)
 
             return (
@@ -489,7 +492,7 @@ export function MessageDemo() {
                   </div>
                 </form>
               ) : (
-                <div className={`flex items-center gap-1 ${isSentMessage ? "self-end" : "self-start"}`}>
+                <div className={`flex w-fit max-w-[90%] items-center gap-1 ${isSentMessage ? "self-end" : "self-start"}`}>
                   <DropdownMenu>
                       <DropdownMenuTrigger
                         render={
@@ -560,12 +563,21 @@ export function MessageDemo() {
                         )}
                       </DropdownMenuContent>
                     </DropdownMenu>
-                  <Bubble variant={isSentMessage ? "default" : "muted"}>
-                    <BubbleContent>
+                  <Bubble
+                    variant={isSentMessage ? "default" : "muted"}
+                    className="max-w-[calc(100%-2.25rem)]"
+                  >
+                    <BubbleContent className={hasTextContent ? "" : "p-0"}>
                       {message.textContent}
                       {message.mediaURL && (
-                      <img className="rounded-lg mt-2" width={300} height={300} src={message.mediaURL} alt={message.mediaURL} />
-                    )}
+                        <img
+                          className={hasTextContent ? "mt-2 rounded-lg" : "block rounded-none"}
+                          width={300}
+                          height={300}
+                          src={message.mediaURL}
+                          alt="Message attachment"
+                        />
+                      )}
                     </BubbleContent>
                     {reactionGroups.length > 0 && (
                       <BubbleReactions
