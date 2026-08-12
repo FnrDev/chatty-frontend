@@ -12,12 +12,23 @@ import {
   tableFeatures,
   useTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, Search } from "lucide-react"
+import { ArrowUpDown, Search, Trash2 } from "lucide-react"
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import api from "@/services/api"
 import {
   Table,
   TableBody,
@@ -40,7 +51,7 @@ const features = tableFeatures({
 
 const columnHelper = createColumnHelper()
 
-const columns = columnHelper.columns([
+const memberColumns = columnHelper.columns([
   columnHelper.accessor((member) => member.user?.username || "", {
     id: "member",
     header: ({ column }) => <SortableHeader column={column} label="Member" />,
@@ -96,9 +107,36 @@ const columns = columnHelper.columns([
   }),
 ])
 
-export default function MembersDataTable({ members }) {
+const ownerColumns = [
+  ...memberColumns,
+  columnHelper.display({
+    id: "actions",
+    header: () => <span className="sr-only">Actions</span>,
+    cell: ({ row, table }) => {
+      if (row.original.role === "owner") return null
+
+      return (
+        <div className="flex justify-end">
+          <RemoveMemberButton
+            member={row.original}
+            workspaceId={table.options.meta.workspaceId}
+            onRemoved={table.options.meta.onMemberRemoved}
+          />
+        </div>
+      )
+    },
+  }),
+]
+
+export default function MembersDataTable({
+  members,
+  canRemoveMembers = false,
+  onMemberRemoved,
+  workspaceId,
+}) {
   const [sorting, setSorting] = useState([])
   const [columnFilters, setColumnFilters] = useState([])
+  const columns = canRemoveMembers ? ownerColumns : memberColumns
 
   const table = useTable({
     features,
@@ -109,6 +147,10 @@ export default function MembersDataTable({ members }) {
     state: {
       sorting,
       columnFilters,
+    },
+    meta: {
+      onMemberRemoved,
+      workspaceId,
     },
   })
 
@@ -195,6 +237,63 @@ export default function MembersDataTable({ members }) {
         </div>
       </div>
     </div>
+  )
+}
+
+function RemoveMemberButton({ member, workspaceId, onRemoved }) {
+  const [open, setOpen] = useState(false)
+  const [isRemoving, setIsRemoving] = useState(false)
+  const [error, setError] = useState("")
+  const username = member.user?.username || "this member"
+
+  async function removeMember() {
+    try {
+      setIsRemoving(true)
+      setError("")
+      await api.delete(`/workspaces/${workspaceId}/members/${member._id}`)
+      setOpen(false)
+      onRemoved(member._id)
+    } catch (err) {
+      setError(err.response?.data?.message || "Could not remove member")
+    } finally {
+      setIsRemoving(false)
+    }
+  }
+
+  return (
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <Button
+        type="button"
+        variant="destructive"
+        size="sm"
+        onClick={() => {
+          setError("")
+          setOpen(true)
+        }}
+      >
+        <Trash2 />
+        Delete member
+      </Button>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Remove {username}?</AlertDialogTitle>
+          <AlertDialogDescription>
+            They will lose access to this workspace. They can join again later.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        {error && <p className="text-sm text-destructive">{error}</p>}
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isRemoving}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            variant="destructive"
+            disabled={isRemoving}
+            onClick={removeMember}
+          >
+            {isRemoving ? "Removing..." : "Remove member"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }
 

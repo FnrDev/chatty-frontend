@@ -1,6 +1,7 @@
 import Layout from '@/components/Layout/Layout'
 import MembersDataTable from '@/components/Workspace/MembersDataTable'
 import { getWorkSpaceData } from '@/services/workSpace'
+import { useAuth } from '@/context/AuthContext'
 import { Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router'
@@ -8,6 +9,7 @@ import { useParams } from 'react-router'
 function WorkSpaceApp() {
 
   const { id } = useParams()
+  const { user } = useAuth()
   const [workSpace, setWorkSpace] = useState({ name: '', members: [] })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -50,7 +52,19 @@ function WorkSpaceApp() {
         {loading ? (
           <div className='mt-6 h-64 animate-pulse rounded-xl bg-muted' />
         ) : (
-          <MembersDataTable members={workSpace.members || []} />
+          <MembersDataTable
+            members={workSpace.members || []}
+            canRemoveMembers={String(workSpace.owner) === String(user?._id)}
+            onMemberRemoved={(memberId) =>
+              setWorkSpace((currentWorkspace) => ({
+                ...currentWorkspace,
+                members: currentWorkspace.members.filter(
+                  (member) => member._id !== memberId
+                ),
+              }))
+            }
+            workspaceId={id}
+          />
         )}
       </section>
     </Layout>
