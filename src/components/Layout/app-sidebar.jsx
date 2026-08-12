@@ -11,12 +11,14 @@ import { useEffect, useState } from "react"
 import api from "@/services/api"
 import { Link, useParams } from "react-router"
 import { Hash } from "lucide-react"
+import WorkSpaceSettings from "../Channel/WorkSpaceSettings"
 
 export function AppSidebar(props) {
 
   const { user } = useAuth()
   const [channels, setChannels] = useState([])
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogWorkSpace, setDialogWorkSpace] = useState(false);
 
   const { id } = useParams()
 
@@ -51,6 +53,10 @@ export function AppSidebar(props) {
       <TeamSwitcher />
       </SidebarHeader>
       <SidebarContent className="px-2.5 mt-1">
+        <WorkSpaceSettings 
+          open={dialogWorkSpace}
+          onOpenChange={setDialogWorkSpace}
+        />
         <CreateChannel 
            open={dialogOpen}
            onOpenChange={setDialogOpen}

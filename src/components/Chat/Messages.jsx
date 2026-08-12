@@ -1,5 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bubble, BubbleContent } from "@/components/ui/bubble";
+import { Bubble, BubbleReactions, BubbleContent } from "@/components/ui/bubble";
 import {
   Message,
   MessageAvatar,
@@ -9,7 +9,9 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -33,6 +35,28 @@ import { useParams } from 'react-router'
 import { useAuth } from "@/context/AuthContext";
 import { uploadImage } from "@/services/uploadImage";
 
+const REACTION_CHOICES = ["👍", "❤️", "😂", "🎉", "👀", "🙏"]
+
+function groupReactions(reactions, currentUserId) {
+  const groups = new Map()
+
+  for (const reaction of reactions || []) {
+    const authorId = String(reaction.author?._id || reaction.author)
+    const group = groups.get(reaction.reaction) || {
+      reaction: reaction.reaction,
+      count: 0,
+      mine: null,
+    }
+
+    group.count += 1
+    if (authorId === String(currentUserId)) group.mine = reaction
+
+    groups.set(reaction.reaction, group)
+  }
+
+  return [...groups.values()]
+}
+
 export function MessageDemo() {
   const messagesContainerRef = useRef(null);
   const [messages, setMessages] = useState([]);
@@ -46,6 +70,8 @@ export function MessageDemo() {
   const [pinnedMessageIds, setPinnedMessageIds] = useState(() => new Set());
   const [pinningMessageId, setPinningMessageId] = useState(null);
   const [pinError, setPinError] = useState("");
+  const [reactingMessageId, setReactingMessageId] = useState(null);
+  const [reactionError, setReactionError] = useState("");
   const [message, setMessage] = useState({
     textContent: "",
     mediaURL: "",
@@ -189,6 +215,28 @@ export function MessageDemo() {
     }
   }, [channelId])
 
+  useEffect(() => {
+    function handleReactionChanged(updatedMessage) {
+      if (String(updatedMessage.channel) !== channelId) return
+
+      setMessages((currentMessages) =>
+        currentMessages.map((currentMessage) =>
+          currentMessage._id === updatedMessage._id
+            ? { ...currentMessage, reactions: updatedMessage.reactions }
+            : currentMessage
+        )
+      )
+    }
+
+    socket.on('message_reaction_added', handleReactionChanged)
+    socket.on('message_reaction_removed', handleReactionChanged)
+
+    return () => {
+      socket.off('message_reaction_added', handleReactionChanged)
+      socket.off('message_reaction_removed', handleReactionChanged)
+    }
+  }, [channelId])
+
   function sendMessage() {
     if (!message.textContent.trim()) return;
 
@@ -315,6 +363,42 @@ export function MessageDemo() {
     }
   }
 
+  async function toggleReaction(messageToReact, reaction) {
+    const messageId = messageToReact._id
+    const mine = groupReactions(messageToReact.reactions, user?._id).find(
+      (group) => group.reaction === reaction
+    )?.mine
+
+    try {
+      setReactingMessageId(messageId)
+      setReactionError("")
+
+      const response = mine
+        ? await api.delete(
+            `/workspaces/${id}/channels/${channelId}/messages/${messageId}/reactions/${mine._id}`
+          )
+        : await api.post(
+            `/workspaces/${id}/channels/${channelId}/messages/${messageId}/reactions`,
+            { reaction }
+          )
+
+      setMessages((currentMessages) =>
+        currentMessages.map((currentMessage) =>
+          currentMessage._id === messageId
+            ? { ...currentMessage, reactions: response.data.reactions }
+            : currentMessage
+        )
+      )
+    } catch (err) {
+      setReactionError(
+        err.response?.data?.message ||
+          `Could not ${mine ? "remove" : "add"} reaction`
+      )
+    } finally {
+      setReactingMessageId(null)
+    }
+  }
+
   async function handleOnChange(event) {
     const { name, value, type, files } = event.target
     if (type === "file") {
@@ -348,6 +432,7 @@ export function MessageDemo() {
             const isSentMessage = user?._id === authorId
             const isEditing = editingMessageId === message._id
             const isPinned = pinnedMessageIds.has(message._id)
+            const reactionGroups = groupReactions(message.reactions, user?._id)
 
             return (
               <Message key={message._id} align={isSentMessage ? "end" : "start"}>
@@ -418,7 +503,32 @@ export function MessageDemo() {
                       >
                         <MoreHorizontal className="size-4" />
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" className="w-auto">
+                        <DropdownMenuGroup className="flex items-center gap-0.5">
+                          {REACTION_CHOICES.map((choice) => {
+                            const isMine = reactionGroups.some(
+                              (group) => group.reaction === choice && group.mine
+                            )
+
+                            return (
+                              <DropdownMenuItem
+                                key={choice}
+                                closeOnClick={false}
+                                label={choice}
+                                aria-label={`React with ${choice}`}
+                                aria-pressed={isMine}
+                                disabled={reactingMessageId === message._id}
+                                className={`size-8 justify-center p-0 text-base ${
+                                  isMine ? "bg-accent" : ""
+                                }`}
+                                onClick={() => toggleReaction(message, choice)}
+                              >
+                                {choice}
+                              </DropdownMenuItem>
+                            )
+                          })}
+                        </DropdownMenuGroup>
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem
                           disabled={pinningMessageId === message._id}
                           onClick={() => toggleMessagePin(message)}
@@ -457,6 +567,31 @@ export function MessageDemo() {
                       <img className="rounded-lg mt-2" width={300} height={300} src={message.mediaURL} alt={message.mediaURL} />
                     )}
                     </BubbleContent>
+                    {reactionGroups.length > 0 && (
+                      <BubbleReactions
+                        align={isSentMessage ? "start" : "end"}
+                        aria-label={`Reactions: ${reactionGroups
+                          .map((group) => `${group.reaction} ${group.count}`)
+                          .join(", ")}`}
+                      >
+                        {reactionGroups.map((group) => (
+                          <button
+                            key={group.reaction}
+                            type="button"
+                            aria-label={`${group.reaction} ${group.count}`}
+                            aria-pressed={Boolean(group.mine)}
+                            disabled={reactingMessageId === message._id}
+                            onClick={() => toggleReaction(message, group.reaction)}
+                            className={`flex items-center gap-1 rounded-full px-1.5 py-0.5 text-xs transition-colors hover:bg-accent ${
+                              group.mine ? "bg-accent" : ""
+                            }`}
+                          >
+                            <span className="text-sm leading-none">{group.reaction}</span>
+                            <span className="text-muted-foreground">{group.count}</span>
+                          </button>
+                        ))}
+                      </BubbleReactions>
+                    )}
                   </Bubble>
                 </div>
               )}
@@ -479,6 +614,9 @@ export function MessageDemo() {
       </div>
       {pinError && (
         <p className="mb-2 text-sm text-destructive">{pinError}</p>
+      )}
+      {reactionError && (
+        <p className="mb-2 text-sm text-destructive">{reactionError}</p>
       )}
       <Card className="mt-3 flex flex-col min-h-max! gap-3! shrink-0 items-start px-2 py-2!">
          {message.mediaURL && (

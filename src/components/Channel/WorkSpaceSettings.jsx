@@ -19,9 +19,7 @@ import { useAuth } from "@/context/AuthContext"
 import { useParams } from "react-router"
 import api from "@/services/api"
 
-export default function CreateChannel({ open, onOpenChange, onCreated }) {
-
-  const { user } = useAuth()
+export default function WorkSpaceSettings({ open, onOpenChange, onUpdated }) {
   const params = useParams()
 
   const {
@@ -29,20 +27,16 @@ export default function CreateChannel({ open, onOpenChange, onCreated }) {
     handleSubmit,
     formState: { errors, isSubmitting },
     setError,
-    reset,
   } = useForm()
 
 
   async function onSubmit(data) {
     try {
-      const created = await api.post(`/workspaces/${params.id}/channels`, {
+      const updated = await api.post(`/workspaces/${params.id}`, {
         name: data.name,  
-        description: data.description,
-        owner: user.id,
-        workspace: params.id
-      })
-      onCreated?.(created.data)
-      reset()
+        image: data.image
+    })
+      onUpdated?.(updated.data)
       onOpenChange(false)
     } catch (err) {
       console.log(err)
@@ -63,10 +57,10 @@ export default function CreateChannel({ open, onOpenChange, onCreated }) {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogTrigger className="bg-[#1c1c1c] mt-2 font-light  rounded-md border-2 border-[#353535] text-[15px] h-11">Create New Channel</DialogTrigger>
+        <DialogTrigger className="bg-[#1c1c1c] mt-2 font-light  rounded-md border-2 border-[#353535] text-[15px] h-11">Workspace Settings</DialogTrigger>
         <DialogContent showCloseButton={false}>
             <DialogHeader>
-            <DialogTitle>Create New Channel</DialogTitle>
+            <DialogTitle>Workspace Settings</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit(onSubmit)}>
                 <FieldSet>
