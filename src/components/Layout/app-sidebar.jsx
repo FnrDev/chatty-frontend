@@ -19,6 +19,7 @@ export function AppSidebar(props) {
   const [channels, setChannels] = useState([])
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogWorkSpace, setDialogWorkSpace] = useState(false);
+  const [updatedWorkspace, setUpdatedWorkspace] = useState(null);
 
   const { id } = useParams()
 
@@ -50,12 +51,13 @@ export function AppSidebar(props) {
             <h2 className="text-2xl">Chatty</h2>
           </div>
         </Link>
-      <TeamSwitcher />
+      <TeamSwitcher updatedWorkspace={updatedWorkspace} />
       </SidebarHeader>
       <SidebarContent className="px-2.5 mt-1">
-        <WorkSpaceSettings 
+        <WorkSpaceSettings
           open={dialogWorkSpace}
           onOpenChange={setDialogWorkSpace}
+          onUpdated={setUpdatedWorkspace}
         />
         <CreateChannel 
            open={dialogOpen}

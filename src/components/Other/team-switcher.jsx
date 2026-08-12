@@ -20,7 +20,7 @@ import CreateWorkspace from "@/components/Workspace/CreateWorkspace"
 import api from "@/services/api"
 import { useNavigate, useParams } from "react-router"
 
-export function TeamSwitcher() {
+export function TeamSwitcher({ updatedWorkspace }) {
   const { isMobile } = useSidebar()
   const [workSpaces, setWorkSpaces] = useState([])
   const [activeTeam, setActiveTeam] = useState(workSpaces[0])
@@ -70,7 +70,20 @@ export function TeamSwitcher() {
     return null
   }
 
-  const memberCount = activeTeam.members?.length ?? 0
+  function applyUpdate(workspace) {
+    return updatedWorkspace && workspace._id === updatedWorkspace._id
+      ? {
+          ...workspace,
+          name: updatedWorkspace.name,
+          imageURL: updatedWorkspace.imageURL,
+        }
+      : workspace
+  }
+
+  const activeWorkspace = applyUpdate(activeTeam)
+  const teams = workSpaces.map(applyUpdate)
+
+  const memberCount = activeWorkspace.members?.length ?? 0
 
   return (
     <SidebarMenu>
@@ -84,11 +97,19 @@ export function TeamSwitcher() {
               />
             }
           >
-            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-accent text-sidebar-primary-foreground">
-              {activeTeam.name[0].toUpperCase()}
+            <div className="flex aspect-square size-8 items-center justify-center overflow-hidden rounded-lg bg-sidebar-accent text-sidebar-primary-foreground">
+              {activeWorkspace.imageURL ? (
+                <img
+                  src={activeWorkspace.imageURL}
+                  alt=""
+                  className="size-full object-cover"
+                />
+              ) : (
+                activeWorkspace.name[0].toUpperCase()
+              )}
             </div>
             <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate text-[1rem] font-medium">{activeTeam.name}</span>
+              <span className="truncate text-[1rem] font-medium">{activeWorkspace.name}</span>
               <span className="text-xs text-muted-foreground">{memberCount} {memberCount === 1 ? "Member" : "Members"}</span>
             </div>
             <ChevronsUpDown className="ml-auto" />
@@ -103,15 +124,23 @@ export function TeamSwitcher() {
               <DropdownMenuLabel className="text-xs text-muted-foreground">
                 Workspaces
               </DropdownMenuLabel>
-              {workSpaces.map((team, index) => {
+              {teams.map((team) => {
                 return (
                   <DropdownMenuItem
                     key={team._id}
                     className="gap-2 p-2"
                     onClick={() => selectWorkspace(team._id)}
                   >
-                    <div className="flex size-6 items-center justify-center rounded-md border">
-                      {team.name[0].toUpperCase()}
+                    <div className="flex size-6 items-center justify-center overflow-hidden rounded-md border">
+                      {team.imageURL ? (
+                        <img
+                          src={team.imageURL}
+                          alt=""
+                          className="size-full object-cover"
+                        />
+                      ) : (
+                        team.name[0].toUpperCase()
+                      )}
                     </div>
                     {team.name}
                   </DropdownMenuItem>
