@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { useForm } from "react-hook-form"
+import { Separator } from "@/components/ui/separator";
 
 function SignInForm() {
   const {
@@ -62,6 +63,8 @@ function SignInForm() {
       </Field>
       {errors.server && <span className="text-red-500 text-sm">{errors.server.message}</span>}
       </FieldGroup>
+      <Separator />
+      <Button variant={"secondary"} className={"w-full mt-3"} onClick={() => navigate("/sign-up")}>Sign-Up</Button>
       </form>
       </div>
     </div>
